@@ -2,6 +2,8 @@
 
 A practical collection of AutoLISP utilities for piping and plant design workflows in AutoCAD. This project helps users create pipe geometry, export line length data, summarize block attributes, and extract Plant 3D asset metadata into CSV files.
 
+Developed by ivihc for practical piping and plant design automation tasks.
+
 ## Keywords
 AutoCAD AutoLISP, pipe tools, piping utilities, Plant 3D, block attribute export, line length export, CSV export, AutoCAD script, pipe drawing, 3D pipe generation.
 
