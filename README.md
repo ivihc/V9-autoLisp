@@ -15,6 +15,7 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 - Pipe drawing command for creating simple pipe segments with center lines
 - 3D pipe creation command based on selected center lines
 - Export commands for line metrics and block attribute summaries
+- A block hierarchy analyzer for nested block structures and quantity calculation
 - A single loader file for AutoCAD app loading
 
 ### Main commands
@@ -25,6 +26,7 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 - PIPE_LENGTH_WINDOW: export line lengths from a selected area
 - PIPE_BLOCK_SUMMARY: export block attribute summaries from a selected area
 - PIPE_BLOCK_SUMMARY_ALL: export block attribute summaries from the whole drawing
+- BLKHIER: analyze nested block hierarchy and export a CSV report
 - PLANT_EXTRACT: probe Plant 3D asset metadata and export it to CSV
 - PLANT_PROBE: inspect metadata from a single selected object
 
@@ -49,6 +51,7 @@ Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liê
 - Lệnh vẽ ống đơn giản với đường center line
 - Lệnh tạo ống 3D từ các đường center line đã chọn
 - Các lệnh xuất dữ liệu về độ dài line và tổng hợp thuộc tính block
+- Công cụ phân tích cấu trúc block lồng nhau và tính số lượng vật tư
 - Một file loader duy nhất để nạp toàn bộ module vào AutoCAD
 
 ### Các lệnh chính
@@ -59,6 +62,7 @@ Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liê
 - PIPE_LENGTH_WINDOW: xuất độ dài line từ vùng chọn
 - PIPE_BLOCK_SUMMARY: xuất tổng hợp thuộc tính block từ vùng chọn
 - PIPE_BLOCK_SUMMARY_ALL: xuất tổng hợp thuộc tính block từ toàn bộ bản vẽ
+- BLKHIER: phân tích cấu trúc block lồng nhau và xuất báo cáo CSV
 - PLANT_EXTRACT: dò và xuất metadata của Plant 3D asset sang CSV
 - PLANT_PROBE: kiểm tra metadata của một đối tượng đã chọn
 
