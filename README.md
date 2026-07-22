@@ -18,6 +18,8 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 - PIPE_LENGTH_WINDOW: export line lengths from a selected area
 - PIPE_BLOCK_SUMMARY: export block attribute summaries from a selected area
 - PIPE_BLOCK_SUMMARY_ALL: export block attribute summaries from the whole drawing
+- PLANT_EXTRACT: probe Plant 3D asset metadata and export it to CSV
+- PLANT_PROBE: inspect metadata from a single selected object
 
 ### Installation
 1. Open AutoCAD.
@@ -50,6 +52,8 @@ Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liê
 - PIPE_LENGTH_WINDOW: xuất độ dài line từ vùng chọn
 - PIPE_BLOCK_SUMMARY: xuất tổng hợp thuộc tính block từ vùng chọn
 - PIPE_BLOCK_SUMMARY_ALL: xuất tổng hợp thuộc tính block từ toàn bộ bản vẽ
+- PLANT_EXTRACT: dò và xuất metadata của Plant 3D asset sang CSV
+- PLANT_PROBE: kiểm tra metadata của một đối tượng đã chọn
 
 ### Cài đặt
 1. Mở AutoCAD.
