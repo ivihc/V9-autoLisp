@@ -15,7 +15,7 @@
   (if (findfile drawFile) (load drawFile) (princ "\n[Pipe] Missing drawing module."))
   (if (findfile pipe3dFile) (load pipe3dFile) (princ "\n[Pipe] Missing PIPE3D module."))
 
-  (princ "\n[Pipe] All modules loaded. Type DPIPE, PIPE3D, PLEN, CBLK, or V9."))
+  (princ "\n[Pipe] All modules loaded. Use PIPE_DRAW, PIPE3D_CREATE, PIPE_LENGTH_WINDOW, PIPE_BLOCK_SUMMARY, or PIPETOOLS."))
 
 (defun c:LOADPIPETOOLS ()
   (Load-Pipe-Tools)

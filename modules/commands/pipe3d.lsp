@@ -1,9 +1,9 @@
 ;;=========================================================
-;; Command: PIPE3D
+;; Command: PIPE3D_CREATE
 ;;=========================================================
-(defun c:PIPE3D ( / ss i ent edata pt1 pt2 diam radius h
-                    old_osmode old_cmdecho old_dynmode
-                    count *error* old_error)
+(defun c:PIPE3D_CREATE ( / ss i ent edata pt1 pt2 diam radius h
+                          old_osmode old_cmdecho old_dynmode
+                          count *error* old_error)
 
   (setq old_error *error*)
   (defun *error* (msg)
@@ -87,5 +87,7 @@
   (setq *error* old_error)
   (princ))
 
-(princ "\n[Pipe] PIPE3D module loaded.")
+(defun c:PIPE3D () (c:PIPE3D_CREATE) (princ))
+
+(princ "\n[Pipe] PIPE3D_CREATE module loaded.")
 (princ)

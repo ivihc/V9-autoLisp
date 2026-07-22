@@ -1,9 +1,9 @@
 ;;=========================================================
-;; Command: DPIPE (simple cylinder + center line)
+;; Command: PIPE_DRAW (simple cylinder + center line)
 ;;=========================================================
-(defun c:DPIPE ( / diam radius pt1 pt2 h count 
-                   old_osmode old_cmdecho old_solidhist grip_mode
-                   old_clayer old_color old_ltype old_lw)
+(defun c:PIPE_DRAW ( / diam radius pt1 pt2 h count 
+                      old_osmode old_cmdecho old_solidhist grip_mode
+                      old_clayer old_color old_ltype old_lw)
 
   (initget 6)
   (setq diam (getreal "\nNhap duong kinh ong <50>: "))
@@ -72,5 +72,7 @@
     (prompt "\n[!] Khong ve duoc doan nao."))
   (princ))
 
-(princ "\n[Pipe] DPIPE module loaded.")
+(defun c:DPIPE () (c:PIPE_DRAW) (princ))
+
+(princ "\n[Pipe] PIPE_DRAW module loaded.")
 (princ)

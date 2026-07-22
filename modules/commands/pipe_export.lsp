@@ -1,7 +1,7 @@
 ;;=========================================================
 ;; Export commands: LINE / BLOCK statistics
 ;;=========================================================
-(defun Pipe:GetLines (mode / ss ent lst)
+(defun Pipe:SelectLines (mode / ss ent lst)
   (cond
     ((eq mode 'area)
      (prompt "\nSelect LINEs in area (Press ENTER to finish): ")
@@ -17,7 +17,7 @@
          (Pipe:Warn "Selected object is not a LINE.")))
      (reverse lst))))
 
-(defun Pipe:GetLineProps (e / data layer ltype color p1 p2 len handle p1Str p2Str)
+(defun Pipe:GetLineProperties (e / data layer ltype color p1 p2 len handle p1Str p2Str)
   (setq data (entget e)
         layer  (cdr (assoc 8 data))
         ltype  (cond ((cdr (assoc 6 data))) ("ByLayer"))
@@ -30,15 +30,15 @@
         p2Str  (strcat (rtos (car p2) 2 2) " " (rtos (cadr p2) 2 2) " " (rtos (caddr p2) 2 2)))
   (list layer ltype color p1Str p2Str handle len))
 
-(defun Pipe:ExportLine (mode / lines total data props idx path header lineStr)
-  (if (setq lines (Pipe:GetLines mode))
+(defun Pipe:ExportLineMetrics (mode / lines total data props idx path header lineStr)
+  (if (setq lines (Pipe:SelectLines mode))
     (progn
       (setq total 0.0 idx 0 data nil)
       (setq header (strcat "No" Pipe:*Sep* "Layer" Pipe:*Sep* "Linetype" Pipe:*Sep*
                            "Color" Pipe:*Sep* "Start_XYZ" Pipe:*Sep* "End_XYZ" Pipe:*Sep*
                            "Handle" Pipe:*Sep* "Length"))
       (foreach e lines
-        (setq props (Pipe:GetLineProps e)
+        (setq props (Pipe:GetLineProperties e)
               idx   (1+ idx)
               total (+ total (nth 6 props))
               lineStr (strcat (itoa idx) Pipe:*Sep*
@@ -56,14 +56,14 @@
         (Pipe:Msg (strcat "Exported " (itoa (length lines)) " LINE(s) with full details."))))
     (Pipe:Warn "No LINE selected.")))
 
-(defun Pipe:GetAttList (obj / atts lst)
+(defun Pipe:GetBlockAttributes (obj / atts lst)
   (if (and (= (vla-get-HasAttributes obj) :vlax-true)
            (setq atts (vlax-invoke obj 'GetAttributes)))
     (foreach att atts
       (setq lst (cons (cons (vla-get-TagString att) (vla-get-TextString att)) lst))))
   (reverse lst))
 
-(defun Pipe:ExportBlockPivot (mode / ss i e obj name layer attLst allTags keyData blkData exist total
+(defun Pipe:ExportBlockAttributeSummary (mode / ss i e obj name layer attLst allTags keyData blkData exist total
                                       header csvLines path fp val lineStr)
   (setq ss (if (eq mode 'all)
              (ssget "_X" '((0 . "INSERT")))
@@ -78,7 +78,7 @@
         (if (/= (substr name 1 1) "*")
           (progn
             (setq layer (vla-get-Layer obj)
-                  attLst (Pipe:GetAttList obj)
+                  attLst (Pipe:GetBlockAttributes obj)
                   total (1+ total))
             (foreach pair attLst
               (if (not (member (car pair) allTags))
@@ -115,7 +115,7 @@
         (Pipe:Warn "Cannot create CSV file.")))
     (Pipe:Warn "No BLOCK selected.")))
 
-(defun Pipe:Menu (/ opt)
+(defun Pipe:ShowMainMenu (/ opt)
   (prompt (strcat "\n----------------------------------------"
                   "\n[Pipe] Piping Library V" Pipe:*Ver*
                   "\n----------------------------------------"
@@ -126,17 +126,33 @@
                   "\n----------------------------------------\n"))
   (initget "1 2 B BA")
   (setq opt (getkword "Select option [1/2/B/BA]: "))
-  (cond ((= opt "1")  (Pipe:ExportLine 'one))
-        ((= opt "2")  (Pipe:ExportLine 'area))
-        ((= opt "B")  (Pipe:ExportBlockPivot 'area))
-        ((= opt "BA") (Pipe:ExportBlockPivot 'all)))
+  (cond ((= opt "1")  (Pipe:ExportLineMetrics 'one))
+        ((= opt "2")  (Pipe:ExportLineMetrics 'area))
+        ((= opt "B")  (Pipe:ExportBlockAttributeSummary 'area))
+        ((= opt "BA") (Pipe:ExportBlockAttributeSummary 'all)))
   (princ))
 
-(defun c:V9 () (Pipe:Menu) (princ))
-(defun c:PLEN1 () (Pipe:ExportLine 'one) (princ))
-(defun c:PLEN () (Pipe:ExportLine 'area) (princ))
-(defun c:CBLK () (Pipe:ExportBlockPivot 'area) (princ))
-(defun c:CBLKA () (Pipe:ExportBlockPivot 'all) (princ))
+(defun Pipe:Msg (m) (Pipe:ShowMessage m))
+(defun Pipe:Warn (m) (Pipe:ShowWarning m))
+(defun Pipe:SaveCSV (fn header data) (Pipe:WriteCsvFile fn header data))
+(defun Pipe:GetLines (mode) (Pipe:SelectLines mode))
+(defun Pipe:GetLineProps (e) (Pipe:GetLineProperties e))
+(defun Pipe:ExportLine (mode) (Pipe:ExportLineMetrics mode))
+(defun Pipe:GetAttList (obj) (Pipe:GetBlockAttributes obj))
+(defun Pipe:ExportBlockPivot (mode) (Pipe:ExportBlockAttributeSummary mode))
+(defun Pipe:Menu () (Pipe:ShowMainMenu))
 
-(princ (strcat "\n[Pipe] Export module loaded. Type 'PLEN1' or 'PLEN' to measure lines."))
+(defun c:PIPETOOLS () (Pipe:ShowMainMenu) (princ))
+(defun c:PIPE_LENGTH_ORDERED () (Pipe:ExportLineMetrics 'one) (princ))
+(defun c:PIPE_LENGTH_WINDOW () (Pipe:ExportLineMetrics 'area) (princ))
+(defun c:PIPE_BLOCK_SUMMARY () (Pipe:ExportBlockAttributeSummary 'area) (princ))
+(defun c:PIPE_BLOCK_SUMMARY_ALL () (Pipe:ExportBlockAttributeSummary 'all) (princ))
+
+(defun c:V9 () (Pipe:ShowMainMenu) (princ))
+(defun c:PLEN1 () (Pipe:ExportLineMetrics 'one) (princ))
+(defun c:PLEN () (Pipe:ExportLineMetrics 'area) (princ))
+(defun c:CBLK () (Pipe:ExportBlockAttributeSummary 'area) (princ))
+(defun c:CBLKA () (Pipe:ExportBlockAttributeSummary 'all) (princ))
+
+(princ (strcat "\n[Pipe] Export module loaded. Type 'PIPE_LENGTH_ORDERED' or 'PIPE_LENGTH_WINDOW' to measure lines."))
 (princ)
