@@ -1,0 +1,16 @@
+;;; VLisp project file [V2.0] AutoLisp_Project saved to:[d:\2026\autoLisp] at:[7/21/2026]
+(VLISP-PROJECT-LIST 
+  :NAME
+  AutoLisp_Project
+  :OWN-LIST
+  ("PipeLib" "Pipe3D_Maker" "DPIPE" "DPIPE_v2")
+  :FAS-DIRECTORY
+  nil
+  :TMP-DIRECTORY
+  nil
+  :PROJECT-KEYS
+  (:BUILD (:standard))
+  :CONTEXT-ID
+  :AUTOLISP
+)
+;;; EOF
