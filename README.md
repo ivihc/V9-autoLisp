@@ -1,8 +1,13 @@
-# AutoLISP Pipe Tools
+# AutoLISP Pipe Tools for AutoCAD and Plant 3D
+
+A practical collection of AutoLISP utilities for piping and plant design workflows in AutoCAD. This project helps users create pipe geometry, export line length data, summarize block attributes, and extract Plant 3D asset metadata into CSV files.
+
+## Keywords
+AutoCAD AutoLISP, pipe tools, piping utilities, Plant 3D, block attribute export, line length export, CSV export, AutoCAD script, pipe drawing, 3D pipe generation.
 
 ## English
 
-This repository contains a set of AutoLISP utilities for pipe-related tasks in AutoCAD.
+This repository contains a set of AutoLISP utilities for pipe-related tasks in AutoCAD and Plant 3D environments.
 
 ### What it includes
 - Pipe drawing command for creating simple pipe segments with center lines
@@ -36,7 +41,7 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 
 ## Tiếng Việt
 
-Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liên quan đến ống trong AutoCAD.
+Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liên quan đến ống trong AutoCAD và môi trường Plant 3D. Dự án này hỗ trợ tạo hình ống, xuất dữ liệu độ dài line, tổng hợp thuộc tính block và trích xuất metadata của Plant 3D asset sang file CSV.
 
 ### Nội dung chính
 - Lệnh vẽ ống đơn giản với đường center line
