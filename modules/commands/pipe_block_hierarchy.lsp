@@ -40,20 +40,25 @@
             (if (= (cdr (assoc 0 entData)) "INSERT")
               (progn
                 (setq childName (cdr (assoc 2 entData)))
-                (if (= (substr childName 1 1) "*")
+                ;; Guard against missing or empty childName
+                (if (and childName (> (strlen childName) 0) (= (substr childName 1 1) "*"))
                   (setq childName (cdr (assoc 3 entData))))
 
-                (setq childCount 1
-                      childMultiplier (* multiplier childCount)
-                      newPath (if (equal currentPath "")
-                                childName
-                                (strcat currentPath " -> " childName)))
+                (if (and childName (> (strlen childName) 0))
+                  (progn
+                    (setq childCount 1
+                          childMultiplier (* multiplier childCount)
+                          newPath (if (equal currentPath "")
+                                    childName
+                                    (strcat currentPath " -> " childName)))
 
-                (setq results (cons (list currentBlkName childName childCount childMultiplier currentDepth newPath) results))
+                    (setq results (cons (list currentBlkName childName childCount childMultiplier currentDepth newPath) results))
 
-                (setq subResult (Pipe:TraverseBlockDef childName (1+ currentDepth) childMultiplier newPath visited))
-                (if subResult
-                  (setq results (append results subResult))))
+                    (setq subResult (Pipe:TraverseBlockDef childName (1+ currentDepth) childMultiplier newPath visited))
+                    (if subResult
+                      (setq results (append results subResult))))
+                  ;; else: missing childName, skip and warn
+                  (Pipe:Warn (strcat "Found INSERT without block name inside: " currentBlkName ". Skipping entity."))))
               )
             (setq ent (entnext ent)))
           results)
