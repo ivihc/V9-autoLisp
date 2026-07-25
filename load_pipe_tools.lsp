@@ -1,23 +1,32 @@
 (vl-load-com) ;; Luôn nạp thư viện Visual LISP đầu tiên
 
 ;;=========================================================
-;; Main loader for AutoCAD (Bulletproof Version)
+;; Main loader for AutoCAD (Bulletproof Version - Fixed nil error)
 ;;=========================================================
-(defun Load-Pipe-Tools (/ baseDir fileList fullPath missingFiles)
+(defun Load-Pipe-Tools (/ baseDir safeFindFile fileList fullPath missingFiles)
   
-  ;; 1. LẤY ĐƯỜNG DẪN THƯ MỤC CHA MỘT CÁCH CHÍNH XÁC NHẤT
-  ;; Biến *load* chứa tên file đang được thực thi (load)
-  (setq baseDir (vl-filename-directory *load*))
+  ;; 1. LẤY ĐƯỜNG DẪN THƯ MỤC MỘT CÁCH AN TOÀN TUYỆT ĐỐI
+  (setq baseDir "")
   
-  ;; Fallback: Nếu *load* không hoạt động (hiếm gặp), dùng cách cũ
-  (if (or (not baseDir) (= baseDir ""))
-    (setq baseDir (vl-filename-directory (findfile "load_pipe_tools.lsp")))
+  ;; Cách 1: Dùng biến *load* (Hoạt động 99% khi APPLOAD)
+  (if *load*
+    (setq baseDir (vl-filename-directory *load*))
   )
   
-  ;; Đảm bảo baseDir không phải là nil để tránh lỗi strcat
+  ;; Cách 2: Fallback nếu *load* bị rỗng
+  (if (or (not baseDir) (= baseDir ""))
+    (progn
+      (setq safeFindFile (findfile "load_pipe_tools.lsp"))
+      (if safeFindFile ;; KIỂM TRA NIL TRƯỚC KHI DÙNG vl-filename-directory
+        (setq baseDir (vl-filename-directory safeFindFile))
+      )
+    )
+  )
+  
+  ;; Cách 3: Nếu vẫn không được, để rỗng (sẽ dùng đường dẫn tương đối)
   (if (not baseDir) (setq baseDir ""))
 
-  ;; 2. DANH SÁCH CÁC MODULE CẦN NẠP (Dễ dàng thêm/bớt)
+  ;; 2. DANH SÁCH CÁC MODULE CẦN NẠP
   (setq fileList '(
     "modules\\common\\pipe_common.lsp"
     "modules\\commands\\pipe_export.lsp"
@@ -32,21 +41,24 @@
 
   ;; 3. VÒNG LẶP TỰ ĐỘNG NẠP FILE
   (foreach file fileList
-    ;; Tạo đường dẫn tuyệt đối: [Thu_muc_loader] + "\\" + [đường_dẫn_tương_đối]
-    (setq fullPath (strcat baseDir "\\" file))
+    ;; Xây dựng đường dẫn an toàn: Nếu baseDir rỗng, chỉ dùng đường dẫn tương đối
+    (if (= baseDir "")
+      (setq fullPath file)
+      (setq fullPath (strcat baseDir "\\" file))
+    )
     
     (cond
-      ;; Ưu tiên 1: Tìm thấy theo đường dẫn tuyệt đối từ file loader (Chính xác nhất)
+      ;; Ưu tiên 1: Tìm thấy theo đường dẫn tuyệt đối
       ((findfile fullPath)
        (load fullPath)
        (princ (strcat "\n  [OK] Loaded: " file)))
       
-      ;; Ưu tiên 2: Tìm thấy theo đường dẫn tương đối (Dự phòng nếu baseDir bị sai)
+      ;; Ưu tiên 2: Tìm thấy theo đường dẫn tương đối (dự phòng)
       ((findfile file)
        (load file)
        (princ (strcat "\n  [OK] Loaded (relative): " file)))
       
-      ;; Ưu tiên 3: Không tìm thấy -> Ghi nhận lỗi
+      ;; Ưu tiên 3: Không tìm thấy
       (t
        (princ (strcat "\n  [FAIL] Missing: " file))
        (setq missingFiles (cons file missingFiles)))
@@ -61,7 +73,6 @@
       (princ "\n[Pipe] Vui lòng kiểm tra lại cấu trúc thư mục:")
       (foreach f (reverse missingFiles) 
         (princ (strcat "\n  -> " f)))
-      (princ "\n[Pipe] Gợi ý: Đảm bảo thư mục 'modules' nằm cùng cấp với file loader.")
     )
     (princ "\n[Pipe] SUCCESS: Tất cả modules đã được nạp thành công!")
   )
@@ -81,5 +92,5 @@
 ;; Tự động chạy khi file này được APPLOAD
 ;;=========================================================
 (Load-Pipe-Tools)
-(princ "\n[Pipe] System ready. Type LOADPIPETOOLS to reload, or use specific commands.")
+(princ "\n[Pipe] System ready. Type LOADPIPETOOLS to reload.")
 (princ)
