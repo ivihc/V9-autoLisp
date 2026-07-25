@@ -30,6 +30,13 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 - PLANT_EXTRACT: probe Plant 3D asset metadata and export it to CSV
 - PLANT_PROBE: inspect metadata from a single selected object
 
+- PIPE_SLOPE / PSLOPE: draw pipe segments with a controlled slope (1/75 or 1/100). Supports direction `Up`, `Down`, or `Horizontal`, accepts length as horizontal projection (`L0`) or actual pipe length (`L`), and automatically detects vertical (Z) segments. Segments chain automatically (end of one becomes start of next).
+
+Usage example:
+1. APPLOAD `load_pipe_tools.lsp`
+2. Run `PSLOPE` (or `PIPE_SLOPE`)
+3. Follow prompts: diameter, slope (75/100), pick start point and direction, choose `Up/Down/Horizontal`, enter `L0` or `L` when requested.
+
 ### Installation
 1. Open AutoCAD.
 2. Use APPLOAD.
@@ -65,6 +72,14 @@ Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liê
 - BLKHIER: phân tích cấu trúc block lồng nhau và xuất báo cáo CSV
 - PLANT_EXTRACT: dò và xuất metadata của Plant 3D asset sang CSV
 - PLANT_PROBE: kiểm tra metadata của một đối tượng đã chọn
+
+- BLKHIER: phân tích cấu trúc block lồng nhau và xuất báo cáo CSV
+- PIPE_SLOPE / PSLOPE: vẽ đoạn ống có độ nghiêng cố định (1/75 hoặc 1/100). Hỗ trợ hướng `Up`, `Down`, hoặc `Horizontal`, cho phép nhập chiều dài theo ảnh chiếu ngang (`L0`) hoặc chiều dài thực (`L`) và tự động nhận diện đoạn đứng (theo Z). Các đoạn nối tiếp sẽ tự động nối tiếp nhau.
+
+Ví dụ sử dụng:
+1. APPLOAD `load_pipe_tools.lsp`
+2. Gõ `PSLOPE` (hoặc `PIPE_SLOPE`)
+3. Thực hiện theo hướng dẫn: nhập đường kính, chọn slope (75/100), chọn điểm bắt đầu và hướng, chọn `Up/Down/Horizontal`, và nhập `L0` hoặc `L` khi được hỏi.
 
 ### Cài đặt
 1. Mở AutoCAD.
