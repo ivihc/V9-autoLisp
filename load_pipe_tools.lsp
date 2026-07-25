@@ -1,51 +1,85 @@
+(vl-load-com) ;; Luôn nạp thư viện Visual LISP đầu tiên
+
 ;;=========================================================
-;; Main loader for AutoCAD
+;; Main loader for AutoCAD (Bulletproof Version)
 ;;=========================================================
- (defun Load-Pipe-Tools (/ baseDir commonFile exportFile drawFile pipe3dFile plantFile hierarchyFile)
-  ;; Try to locate the loader file directory; fall back to empty string to avoid nil in strcat
-  (setq baseDir (vl-filename-directory (findfile "load_pipe_tools.lsp")))
+(defun Load-Pipe-Tools (/ baseDir fileList fullPath missingFiles)
+  
+  ;; 1. LẤY ĐƯỜNG DẪN THƯ MỤC CHA MỘT CÁCH CHÍNH XÁC NHẤT
+  ;; Biến *load* chứa tên file đang được thực thi (load)
+  (setq baseDir (vl-filename-directory *load*))
+  
+  ;; Fallback: Nếu *load* không hoạt động (hiếm gặp), dùng cách cũ
+  (if (or (not baseDir) (= baseDir ""))
+    (setq baseDir (vl-filename-directory (findfile "load_pipe_tools.lsp")))
+  )
+  
+  ;; Đảm bảo baseDir không phải là nil để tránh lỗi strcat
   (if (not baseDir) (setq baseDir ""))
 
-  ;; Build module paths (works even if baseDir is empty)
-  (setq commonFile (strcat baseDir "\\modules\\common\\pipe_common.lsp"))
-  (setq exportFile (strcat baseDir "\\modules\\commands\\pipe_export.lsp"))
-  (setq drawFile (strcat baseDir "\\modules\\commands\\pipe_draw_simple.lsp"))
-  (setq pipe3dFile (strcat baseDir "\\modules\\commands\\pipe3d.lsp"))
-  (setq plantFile (strcat baseDir "\\modules\\commands\\plant_asset_extractor.lsp"))
-  (setq hierarchyFile (strcat baseDir "\\modules\\commands\\pipe_block_hierarchy.lsp"))
+  ;; 2. DANH SÁCH CÁC MODULE CẦN NẠP (Dễ dàng thêm/bớt)
+  (setq fileList '(
+    "modules\\common\\pipe_common.lsp"
+    "modules\\commands\\pipe_export.lsp"
+    "modules\\commands\\pipe_draw_simple.lsp"
+    "modules\\commands\\pipe3d.lsp"
+    "modules\\commands\\plant_asset_extractor.lsp"
+    "modules\\commands\\pipe_block_hierarchy.lsp"
+  ))
 
-  ;; Try to load each module: first check full path, then try relative path if not found
-  (if (findfile commonFile)
-    (load commonFile)
-    (if (findfile "modules\\common\\pipe_common.lsp") (load "modules\\common\\pipe_common.lsp") (princ "\n[Pipe] Missing common module.")))
+  (setq missingFiles nil)
+  (princ "\n[Pipe] === Starting Module Loader ===")
 
-  (if (findfile exportFile)
-    (load exportFile)
-    (if (findfile "modules\\commands\\pipe_export.lsp") (load "modules\\commands\\pipe_export.lsp") (princ "\n[Pipe] Missing export module.")))
+  ;; 3. VÒNG LẶP TỰ ĐỘNG NẠP FILE
+  (foreach file fileList
+    ;; Tạo đường dẫn tuyệt đối: [Thu_muc_loader] + "\\" + [đường_dẫn_tương_đối]
+    (setq fullPath (strcat baseDir "\\" file))
+    
+    (cond
+      ;; Ưu tiên 1: Tìm thấy theo đường dẫn tuyệt đối từ file loader (Chính xác nhất)
+      ((findfile fullPath)
+       (load fullPath)
+       (princ (strcat "\n  [OK] Loaded: " file)))
+      
+      ;; Ưu tiên 2: Tìm thấy theo đường dẫn tương đối (Dự phòng nếu baseDir bị sai)
+      ((findfile file)
+       (load file)
+       (princ (strcat "\n  [OK] Loaded (relative): " file)))
+      
+      ;; Ưu tiên 3: Không tìm thấy -> Ghi nhận lỗi
+      (t
+       (princ (strcat "\n  [FAIL] Missing: " file))
+       (setq missingFiles (cons file missingFiles)))
+    )
+  )
 
-  (if (findfile drawFile)
-    (load drawFile)
-    (if (findfile "modules\\commands\\pipe_draw_simple.lsp") (load "modules\\commands\\pipe_draw_simple.lsp") (princ "\n[Pipe] Missing drawing module.")))
+  ;; 4. BÁO CÁO KẾT QUẢ
+  (princ "\n[Pipe] === Loader Finished ===")
+  (if missingFiles
+    (progn
+      (princ "\n[Pipe] WARNING: Một số module KHÔNG được nạp!")
+      (princ "\n[Pipe] Vui lòng kiểm tra lại cấu trúc thư mục:")
+      (foreach f (reverse missingFiles) 
+        (princ (strcat "\n  -> " f)))
+      (princ "\n[Pipe] Gợi ý: Đảm bảo thư mục 'modules' nằm cùng cấp với file loader.")
+    )
+    (princ "\n[Pipe] SUCCESS: Tất cả modules đã được nạp thành công!")
+  )
+  
+  (princ)
+)
 
-  (if (findfile pipe3dFile)
-    (load pipe3dFile)
-    (if (findfile "modules\\commands\\pipe3d.lsp") (load "modules\\commands\\pipe3d.lsp") (princ "\n[Pipe] Missing PIPE3D module.")))
-
-  (if (findfile plantFile)
-    (load plantFile)
-    (if (findfile "modules\\commands\\plant_asset_extractor.lsp") (load "modules\\commands\\plant_asset_extractor.lsp") (princ "\n[Pipe] Missing Plant module.")))
-
-  (if (findfile hierarchyFile)
-    (load hierarchyFile)
-    (if (findfile "modules\\commands\\pipe_block_hierarchy.lsp") (load "modules\\commands\\pipe_block_hierarchy.lsp") (princ "\n[Pipe] Missing hierarchy module.")))
-
-  (princ "\n[Pipe] All modules loaded. Use PIPE_DRAW, PIPE3D_CREATE, PLANT_EXTRACT, PIPE_LENGTH_WINDOW, PIPE_BLOCK_SUMMARY, BLKHIER, or PIPETOOLS."))
-
+;;=========================================================
+;; Lệnh gọi lại Loader
+;;=========================================================
 (defun c:LOADPIPETOOLS ()
   (Load-Pipe-Tools)
-  (princ))
+  (princ)
+)
 
-;; Auto-load when the file is APPLOAD'd in AutoCAD
+;;=========================================================
+;; Tự động chạy khi file này được APPLOAD
+;;=========================================================
 (Load-Pipe-Tools)
-(princ "\n[Pipe] Loader ready. Type LOADPIPETOOLS if you want to reload modules.")
+(princ "\n[Pipe] System ready. Type LOADPIPETOOLS to reload, or use specific commands.")
 (princ)
