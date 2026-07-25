@@ -156,7 +156,7 @@
             (vla-delete obj)
             
             ;; 3. Chen block moi tai goc (0,0,0) cua UCS hien tai
-            ;; Block se tu dong "dung len" hoac "nam xuong" theo UCS
+            ;; Block se tu dong \"dung len\" hoac \"nam xuong\" theo UCS
             (command "_.INSERT" blkName "0,0,0" "1" "1" "0")
             (while (> (getvar "CMDACTIVE") 0) (command ""))
             
@@ -199,7 +199,7 @@
       (Pipe:ReadSectionPlanes excelFile)
       (foreach item *SP_PlaneData*
         (Pipe:Msg (strcat "  STT " (itoa (car item)) ": Z=" (rtos (cadr item) 2 0) 
-                          ", X=" (rtos (caddr item) 2 0) ", Y=" (rtos (cadddr item) 2 0)))))
+                          ", X=" (rtos (caddr item) 2 0) ", Y=" (rtos (cadddr item) 2 0))))
     )
   )
   (princ)
@@ -208,4 +208,4 @@
 (princ "\n[Pipe] Section Planes module loaded (Fixed UCS Logic).")
 (princ "\nCommands: SP_READ, SP_PLACE")
 (princ)
-EOF
+EOF}]}]}]}]},
