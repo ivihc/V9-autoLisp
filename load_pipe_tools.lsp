@@ -34,6 +34,7 @@
     "modules\\commands\\pipe3d.lsp"
     "modules\\commands\\plant_asset_extractor.lsp"
     "modules\\commands\\pipe_block_hierarchy.lsp"
+    "modules\\commands\\pipe_slope.lsp"
   ))
 
   (setq missingFiles nil)
