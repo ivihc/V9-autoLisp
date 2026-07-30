@@ -10,40 +10,44 @@
 ;;=========================================================
 ;; HAM VE CHUNG
 ;;=========================================================
-(defun Pipe:DrawPipeSegment (pt1 pt2 radius)
-  (command "_.CYLINDER" "_non" pt1 radius "_AXis" "_non" pt1 "_non" pt2)
+(defun Pipe:DrawPipeSegment (pt1_wcs pt2_wcs radius)
+  (command "_.CYLINDER" "_non" pt1_wcs radius "_AXis" "_non" pt1_wcs "_non" pt2_wcs)
   (while (> (getvar "CMDACTIVE") 0) (command ""))
-  (command "_.LINE" "_non" pt1 "_non" pt2 "")
+  (command "_.LINE" "_non" pt1_wcs "_non" pt2_wcs "")
   (while (> (getvar "CMDACTIVE") 0) (command ""))
 )
 
 ;;=========================================================
-;; HAM TINH DIEM CUOI
+;; HAM TINH DIEM CUOI (CHO ONG NGHIENG/NGANG)
 ;;=========================================================
-(defun Pipe:CalcSlopeEndpoint (pt1 pt2 slopeDenom direction input_type / dist2D angle2D C_val dZ pt_end L0)
-  (setq dist2D (distance (list (car pt1) (cadr pt1) 0.0) 
-                         (list (car pt2) (cadr pt2) 0.0)))
+(defun Pipe:CalcSlopeEndpoint (pt1_wcs pt2_wcs slopeDenom direction input_type / 
+                                dist2D angle2D C_val dZ pt_end L0)
+  (setq dist2D (distance (list (car pt1_wcs) (cadr pt1_wcs) 0.0) 
+                         (list (car pt2_wcs) (cadr pt2_wcs) 0.0)))
   
   (if (< dist2D 0.001)
-    (setq pt_end (list (car pt1) (cadr pt1) (caddr pt2)))
+    (setq pt_end nil)  ; Ong dung thi khong dung ham nay
     (progn
-      (setq angle2D (angle (list (car pt1) (cadr pt1) 0.0) 
-                           (list (car pt2) (cadr pt2) 0.0)))
+      (setq angle2D (angle (list (car pt1_wcs) (cadr pt1_wcs) 0.0) 
+                           (list (car pt2_wcs) (cadr pt2_wcs) 0.0)))
       (setq C_val (/ 1.0 slopeDenom))
+      
       (if (= input_type "L")
         (setq L0 (/ dist2D (sqrt (+ 1.0 (* C_val C_val)))))
         (setq L0 dist2D)
       )
+      
       (setq dZ (* L0 C_val))
       (cond
         ((= direction "Up")   (setq dZ dZ))
         ((= direction "Down") (setq dZ (- dZ)))
         (t                    (setq dZ 0.0))
       )
+      
       (setq pt_end (list 
-                     (+ (car pt1) (* L0 (cos angle2D)))
-                     (+ (cadr pt1) (* L0 (sin angle2D)))
-                     (+ (caddr pt1) dZ)
+                     (+ (car pt1_wcs) (* L0 (cos angle2D)))
+                     (+ (cadr pt1_wcs) (* L0 (sin angle2D)))
+                     (+ (caddr pt1_wcs) dZ)
                    ))
     )
   )
@@ -51,57 +55,17 @@
 )
 
 ;;=========================================================
-;; HAM XU LY INPUT (DA SUA LOI STRINGP VA NUMBERP)
-;;=========================================================
-(defun Pipe:ParseInput (input / str_len first_char num_str num_val)
-  (cond
-    ;; 1. Nếu là điểm (LIST)
-    ((listp input) 
-     (list "POINT" (car input) (cadr input) (caddr input))
-    )
-    
-    ;; 2. Nếu là số (NUMBER) - XỬ LÝ TRƯỚC ĐỂ TRÁNH LỖI VALUE MUST BE NONZERO
-    ((numberp input)
-     (if (> input 0.0)
-       (list "L0" input)
-       (list "INVALID" nil)
-     )
-    )
-    
-    ;; 3. Nếu là chuỗi (STRING) - DÙNG TYPE THAY VÌ STRINGP
-    ((= (type input) 'STR)
-     (setq str_len (strlen input))
-     (if (> str_len 0)
-       (progn
-         (setq first_char (strcase (substr input 1 1)))
-         (setq num_str (substr input 2))
-         (cond
-           ((= first_char "T") (list "TOGGLE" nil))
-           ((and (= first_char "L") (> (strlen num_str) 0))
-            (setq num_val (atof num_str))
-            (if (> num_val 0) (list "L" num_val) (list "INVALID" nil))
-           )
-           (t (list "INVALID" nil))
-         )
-       )
-       (list "EXIT" nil)
-     )
-    )
-    
-    ;; Các trường hợp còn lại (nil, symbol...)
-    (t (list "EXIT" nil))
-  )
-)
-
-;;=========================================================
 ;; VONG LAP VE CHINH
 ;;=========================================================
 (defun Pipe:DrawSlopeLoop (slopeDenom direction / *error* old_err old_vars 
-                            pt1 pt2_temp pt_end radius count input_res temp_diam
-                            parsed input_type dist_input)
+                            pt1_ucs pt1_wcs pt2_ucs pt2_wcs pt_end_wcs pt_end_ucs
+                            radius count input_res temp_diam
+                            dist_input temp_slope l_val ang_ucs ang_wcs
+                            C_val L0_calc dZ_calc vec_ucs vec_wcs)
   
   (setq old_err *error*)
   (defun *error* (msg)
+    (command "_.UNDO" "_E")
     (if (and msg (not (member msg '("Function cancelled" "quit / exit abort"))))
       (prompt (strcat "\n[Pipe] Error: " msg)))
     (if old_vars (foreach var_pair old_vars (setvar (car var_pair) (cdr var_pair))))
@@ -124,55 +88,140 @@
   (if slopeDenom (setq *PS_SlopeDenom* slopeDenom))
   (setq direction *PS_Mode*)
 
-  (prompt (strcat "\n=== CHE DO: " (strcase direction) " - Do nghieng 1/" (itoa *PS_SlopeDenom*) " ===\n"))
-  (prompt "[T] doi che do | [L1500] chieu dai thuc | [1500] chieu dai ngang | [Pick] diem\n")
+  (prompt (strcat "\n=== CHE DO: " (strcase direction) " - Do nghieng 1/" (rtos *PS_SlopeDenom* 2 0) " ===\n"))
+  (prompt "[Toggle] doi che do | [Slope] doi do nghieng | [Length] chieu dai thuc | [Pick/So] chieu dai ngang | [Enter] ket thuc\n")
 
   (setq count 0)
   (command "_.UNDO" "_BE")
-  (setq pt1 (getpoint "\nChon diem dau tien: "))
   
-  (while pt1
-    (initget 0 "T") 
-    (setq input_res (getpoint pt1 (strcat "\nDiem tiep theo <" (strcase direction) ">: ")))
-    (setq parsed (Pipe:ParseInput input_res))
-    (setq input_type (car parsed))
+  (setq pt1_ucs (getpoint "\nChon diem dau tien: "))
+  (setq pt1_wcs (trans pt1_ucs 1 0))
+  
+  (while pt1_ucs
+    (initget 0 "Toggle Slope Length")
+    (setq input_res (getpoint pt1_ucs (strcat "\nDiem tiep theo or [Toggle/Slope/Length] <" (strcase direction) " - 1/" (rtos *PS_SlopeDenom* 2 0) ">: ")))
     
     (cond
-      ((= input_type "TOGGLE")
+      ;; DOI HUONG
+      ((= input_res "Toggle")
        (cond
          ((= direction "Flat") (setq direction "Up"))
          ((= direction "Up")   (setq direction "Down"))
          ((= direction "Down") (setq direction "Flat"))
        )
        (setq *PS_Mode* direction)
-       (prompt (strcat "\n*** DOI SANG: " (strcase direction) " - 1/" (itoa *PS_SlopeDenom*) " ***\n"))
+       (prompt (strcat "\n*** DOI SANG: " (strcase direction) " - 1/" (rtos *PS_SlopeDenom* 2 0) " ***\n"))
       )
-      ((= input_type "EXIT") (setq pt1 nil))
-      ((= input_type "INVALID") (prompt "\n[!] Input khong hop le."))
-      ((or (= input_type "POINT") (= input_type "L0") (= input_type "L"))
-       (setq dist_input (cadr parsed))
-       (if (= input_type "POINT")
-         (setq pt2_temp (list (nth 1 parsed) (nth 2 parsed) (nth 3 parsed))
-               dist_input (distance (list (car pt1) (cadr pt1) 0.0) 
-                                    (list (car pt2_temp) (cadr pt2_temp) 0.0)))
-         (setq pt2_temp (polar pt1 (getvar "LASTANGLE") dist_input))
-       )
-       (setq pt_end (Pipe:CalcSlopeEndpoint pt1 pt2_temp *PS_SlopeDenom* direction input_type))
-       (if (> (distance pt1 pt_end) 0.001)
+      
+      ;; DOI DO NGHIENG
+      ((= input_res "Slope")
+       (initget 6)
+       (setq temp_slope (getreal (strcat "\nNhap MAU SO do nghieng moi <" (rtos *PS_SlopeDenom* 2 0) ">: ")))
+       (if temp_slope 
          (progn
-           (Pipe:DrawPipeSegment pt1 pt_end radius)
-           (setq count (1+ count))
-           (if (< (distance (list (car pt1) (cadr pt1) 0.0) (list (car pt_end) (cadr pt_end) 0.0)) 0.001)
-             (prompt (strcat "\n + Pipe " (itoa count) " (VERTICAL) | H=" (rtos (abs (- (caddr pt_end) (caddr pt1))) 2 2)))
-             (prompt (strcat "\n + Pipe " (itoa count) 
-                             " | L0=" (rtos (distance (list (car pt1) (cadr pt1) 0.0) (list (car pt_end) (cadr pt_end) 0.0)) 2 2)
-                             " | dZ=" (rtos (abs (- (caddr pt_end) (caddr pt1))) 2 2)
-                             " | L=" (rtos (distance pt1 pt_end) 2 2)))
-           )
-           (setq pt1 pt_end)
+           (setq *PS_SlopeDenom* temp_slope)
+           (prompt (strcat "\n*** DO NGHIENG MOI: 1/" (rtos *PS_SlopeDenom* 2 0) " ***\n"))
          )
        )
       )
+      
+      ;; NHAP CHIEU DAI THUC L
+      ((= input_res "Length")
+       (initget 6)
+       (setq l_val (getreal "\nNhap chieu dai thuc L: "))
+       (if l_val
+         (progn
+           (setq ang_ucs (getangle pt1_ucs (strcat "\nChon huong di <" (angtos (getvar "LASTANGLE") 0 2) ">: ")))
+           (if (not ang_ucs) (setq ang_ucs (getvar "LASTANGLE")))
+           
+           ;; Chuyen goc tu UCS sang WCS
+           (setq vec_ucs (list (cos ang_ucs) (sin ang_ucs) 0))
+           (setq vec_wcs (mapcar '- (trans (mapcar '+ pt1_ucs vec_ucs) 1 0) pt1_wcs))
+           (setq ang_wcs (angle '(0 0 0) (list (car vec_wcs) (cadr vec_wcs) 0)))
+           
+           ;; Tinh nguoc L0 tu L
+           (setq C_val (/ 1.0 *PS_SlopeDenom*))
+           (setq L0_calc (/ l_val (sqrt (+ 1.0 (* C_val C_val)))))
+           (setq dZ_calc (* L0_calc C_val))
+           
+           (cond
+             ((= direction "Up")   (setq dZ_calc dZ_calc))
+             ((= direction "Down") (setq dZ_calc (- dZ_calc)))
+             (t                    (setq dZ_calc 0.0))
+           )
+           
+           (setq pt_end_wcs (list 
+                              (+ (car pt1_wcs) (* L0_calc (cos ang_wcs)))
+                              (+ (cadr pt1_wcs) (* L0_calc (sin ang_wcs)))
+                              (+ (caddr pt1_wcs) dZ_calc)
+                            ))
+           
+           (setq pt_end_ucs (trans pt_end_wcs 0 1))
+           
+           (if (> (distance pt1_wcs pt_end_wcs) 0.001)
+             (progn
+               (Pipe:DrawPipeSegment pt1_wcs pt_end_wcs radius)
+               (setq count (1+ count))
+               (prompt (strcat "\n + Pipe " (itoa count) 
+                               " | L=" (rtos l_val 2 2)
+                               " | L0=" (rtos L0_calc 2 2)
+                               " | dZ=" (rtos (abs dZ_calc) 2 2)))
+               (setq pt1_ucs pt_end_ucs)
+               (setq pt1_wcs pt_end_wcs)
+             )
+           )
+         )
+       )
+      )
+      
+      ;; PICK DIEM HOAC GO SO
+      ((listp input_res)
+       (setq pt2_ucs input_res)
+       (setq pt2_wcs (trans pt2_ucs 1 0))
+       
+       (setq dist_input (distance (list (car pt1_wcs) (cadr pt1_wcs) 0.0) 
+                                  (list (car pt2_wcs) (cadr pt2_wcs) 0.0)))
+       
+       (if (> dist_input 0.001)
+         ;; ONG NGHIENG/NGANG: dung ham tinh toan
+         (progn
+           (setq pt_end_wcs (Pipe:CalcSlopeEndpoint pt1_wcs pt2_wcs *PS_SlopeDenom* direction "L0"))
+           (setq pt_end_ucs (trans pt_end_wcs 0 1))
+           
+           (if pt_end_wcs
+             (progn
+               (Pipe:DrawPipeSegment pt1_wcs pt_end_wcs radius)
+               (setq count (1+ count))
+               (prompt (strcat "\n + Pipe " (itoa count) 
+                               " | L0=" (rtos dist_input 2 2)
+                               " | dZ=" (rtos (abs (- (caddr pt_end_wcs) (caddr pt1_wcs))) 2 2)))
+               (setq pt1_ucs pt_end_ucs)
+               (setq pt1_wcs pt_end_wcs)
+             )
+           )
+         )
+         
+         ;; ONG THANG DUNG: LOGIC DON GIAN - Lay Z cua pt2, giu nguyen X,Y cua pt1
+         (progn
+           (setq pt_end_wcs (list (car pt1_wcs) (cadr pt1_wcs) (caddr pt2_wcs)))
+           (setq pt_end_ucs (trans pt_end_wcs 0 1))
+           
+           (if (> (distance pt1_wcs pt_end_wcs) 0.001)
+             (progn
+               (Pipe:DrawPipeSegment pt1_wcs pt_end_wcs radius)
+               (setq count (1+ count))
+               (prompt (strcat "\n + Pipe " (itoa count) " (VERTICAL) | H=" 
+                               (rtos (abs (- (caddr pt2_wcs) (caddr pt1_wcs))) 2 2)))
+               (setq pt1_ucs pt_end_ucs)
+               (setq pt1_wcs pt_end_wcs)
+             )
+           )
+         )
+       )
+      )
+      
+      ;; ENTER / ESC
+      ((null input_res) (setq pt1_ucs nil))
     )
   )
 
@@ -184,34 +233,37 @@
 )
 
 ;;=========================================================
+;; HAM CHON DO NGHIENG
+;;=========================================================
+(defun Pipe:AskSlope ( / temp_slope)
+  (initget 6)
+  (setq temp_slope (getreal (strcat "\nNhap MAU SO do nghieng <" (rtos *PS_SlopeDenom* 2 0) ">: ")))
+  (if temp_slope (setq *PS_SlopeDenom* temp_slope))
+)
+
+;;=========================================================
 ;; CAC LENH
 ;;=========================================================
-(defun c:P0 (/ temp_slope)
-  (initget "75 100")
-  (setq temp_slope (getkword (strcat "\nChon do nghieng (75 or 100) <1/" (itoa *PS_SlopeDenom*) ">: ")))
-  (if temp_slope (setq *PS_SlopeDenom* (atoi temp_slope)))
+(defun c:P0 ()
+  (Pipe:AskSlope)
   (setq *PS_Mode* "Flat")
   (Pipe:DrawSlopeLoop nil "Flat") 
   (princ)
 )
 
-(defun c:P_UP (/ temp_slope)
-  (initget "75 100")
-  (setq temp_slope (getkword (strcat "\nChon do nghieng (75 or 100) <1/" (itoa *PS_SlopeDenom*) ">: ")))
-  (if temp_slope (setq *PS_SlopeDenom* (atoi temp_slope)))
+(defun c:P_UP ()
+  (Pipe:AskSlope)
   (setq *PS_Mode* "Up")
   (Pipe:DrawSlopeLoop *PS_SlopeDenom* "Up")
   (princ)
 )
 
-(defun c:P_DOWN (/ temp_slope)
-  (initget "75 100")
-  (setq temp_slope (getkword (strcat "\nChon do nghieng (75 or 100) <1/" (itoa *PS_SlopeDenom*) ">: ")))
-  (if temp_slope (setq *PS_SlopeDenom* (atoi temp_slope)))
+(defun c:P_DOWN ()
+  (Pipe:AskSlope)
   (setq *PS_Mode* "Down")
   (Pipe:DrawSlopeLoop *PS_SlopeDenom* "Down")
   (princ)
 )
 
-(princ "\n[Pipe] PIPE_SLOPE module loaded. Type P0, P_UP, or P_DOWN to start.")
+(princ "\n[Pipe] PIPE_SLOPE module loaded. Commands: P0, P_UP, P_DOWN")
 (princ)
