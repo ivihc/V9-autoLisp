@@ -36,6 +36,7 @@
     "modules\\commands\\pipe_block_hierarchy.lsp"
     "modules\\commands\\pipe_slope.lsp"
     "modules\\commands\\BOOM.lsp"
+    "modules\\commands\\BOM2D.lsp"
   ))
 
   (setq missingFiles nil)

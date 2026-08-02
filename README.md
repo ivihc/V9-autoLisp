@@ -34,6 +34,8 @@ This repository contains a set of AutoLISP utilities for pipe-related tasks in A
 
 - BOOM / Section Planes: read section plane coordinates from an Excel file and place section blocks in correct UCS orientation. Adds `SP_READ` (read Excel) and `SP_PLACE` (scan and place blocks) commands. Use `getfiled` to select the Excel file; block names must follow the format `T/F/B/R/L` + number (e.g. `T1`, `F2`).
 
+- BOM2D: analyze selected multiline leaders, lines, and dimensions to infer BOM quantities and pipe lengths from 2D drawings. The command `BOM2D` scans the drawing, matches balloons to line geometry, and uses dimension overrides as pipe-length hints.
+
 Usage example:
 1. APPLOAD `load_pipe_tools.lsp`
 2. Run `PSLOPE` (or `PIPE_SLOPE`)
@@ -79,6 +81,8 @@ Kho lưu trữ này chứa các tiện ích AutoLISP dùng cho công việc liê
 - PIPE_SLOPE / PSLOPE: vẽ đoạn ống có độ nghiêng cố định (1/75 hoặc 1/100). Hỗ trợ hướng `Up`, `Down`, hoặc `Horizontal`, cho phép nhập chiều dài theo ảnh chiếu ngang (`L0`) hoặc chiều dài thực (`L`) và tự động nhận diện đoạn đứng (theo Z). Các đoạn nối tiếp sẽ tự động nối tiếp nhau.
 
 - BOOM / Section Planes: đọc tọa độ các mặt cắt từ file Excel và đặt các block mặt cắt về đúng vị trí và hướng bằng cách thiết lập UCS tương ứng. Thêm các lệnh `SP_READ` (đọc Excel) và `SP_PLACE` (quét và đặt block). Dùng `getfiled` để chọn file Excel; tên block phải theo định dạng `T/F/B/R/L` + số (ví dụ `T1`, `F2`).
+
+- BOM2D: phân tích các multileader, line và dimension đã chọn để suy ra số lượng BOM và chiều dài ống từ bản vẽ 2D. Lệnh `BOM2D` quét bản vẽ, ghép balloon với đường ống và dùng text override của dimension như gợi ý về chiều dài.
 
 Ví dụ sử dụng:
 1. APPLOAD `load_pipe_tools.lsp`
