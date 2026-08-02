@@ -27,6 +27,8 @@
   (if (not baseDir) (setq baseDir ""))
 
   ;; 2. DANH SÁCH CÁC MODULE CẦN NẠP
+  ;; Chỉ nạp các file trong modules/common và modules/commands.
+  ;; Không thêm các hàm từ thư mục other/.
   (setq fileList '(
     "modules\\common\\pipe_common.lsp"
     "modules\\commands\\pipe_export.lsp"
@@ -37,6 +39,7 @@
     "modules\\commands\\pipe_slope.lsp"
     "modules\\commands\\BOOM.lsp"
     "modules\\commands\\BOM2D.lsp"
+    "modules\\commands\\BLOCK_ORIENT.lsp"
   ))
 
   (setq missingFiles nil)
