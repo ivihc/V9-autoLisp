@@ -2,43 +2,28 @@
 
 ;;=========================================================
 ;; HÀM ĐỌC FILE CSV (3 CỘT: STT, FILENAME, BLOCKNAME)
-;; KHÔNG BỎ QUA DÒNG NÀO
 ;;=========================================================
 (defun ReadCSV (csv_file / f line data_list fields)
   (setq f (open csv_file "r"))
   (if (not f)
     (progn (prompt (strcat "\n[!] Không mở được file: " csv_file)) (exit))
   )
-  
   (setq data_list '())
-  
-  ;; Đọc TẤT CẢ các dòng
   (while (setq line (read-line f))
     (if (> (strlen line) 0)
       (progn
         (setq fields (ParseCSVLine line))
-        ;; Yêu cầu đủ 3 cột: STT, FileName, BlockName
         (if (>= (length fields) 3)
           (setq data_list (append data_list 
-                                   (list (list 
-                                           (nth 0 fields)  ; Cột 1: STT
-                                           (nth 1 fields)  ; Cột 2: FileName
-                                           (nth 2 fields)  ; Cột 3: BlockName
-                                         ))))
-          ;; Nếu chỉ có 2 cột (không có STT), tự động gán STT
+                                   (list (list (nth 0 fields) (nth 1 fields) (nth 2 fields)))))
           (if (= (length fields) 2)
             (setq data_list (append data_list 
-                                     (list (list 
-                                             "0"           ; STT mặc định
-                                             (nth 0 fields)
-                                             (nth 1 fields)
-                                           ))))
+                                     (list (list "0" (nth 0 fields) (nth 1 fields)))))
           )
         )
       )
     )
   )
-  
   (close f)
   data_list
 )
@@ -97,26 +82,30 @@
 )
 
 ;;=========================================================
-;; HÀM IMPORT FILE 3D
+;; HÀM IMPORT FILE 3D (DÙNG LỆNH IMPORT TỔNG QUÁT)
 ;;=========================================================
-(defun Import3DFile (full_path / ext)
-  (setq ext (GetFileExtension full_path))
-  (cond
-    ((= ext ".SAT") (command "_.SATIN" full_path))
-    ((= ext ".3DS") (command "_.3DSIN" full_path))
-    ((= ext ".STL") (command "_.STLIN" full_path))
-    ((or (= ext ".IGES") (= ext ".IGS")) (command "_.IGESIN" full_path))
-    ((or (= ext ".STEP") (= ext ".STP")) (command "_.STEPIN" full_path))
-  )
+(defun Import3DFile (full_path / old_filedia)
+  ;; Tắt hộp thoại để chạy tự động
+  (setq old_filedia (getvar "FILEDIA"))
+  (setvar "FILEDIA" 0)
+  
+  ;; Dùng lệnh IMPORT (tự động nhận diện định dạng SAT, STL, STEP, IGES, 3DS...)
+  (command "_.IMPORT" full_path)
   (while (> (getvar "CMDACTIVE") 0) (command pause))
+  
+  ;; Khôi phục FILEDIA
+  (setvar "FILEDIA" old_filedia)
 )
 
 ;;=========================================================
 ;; HÀM IMPORT FILE DWG/DXF
 ;;=========================================================
-(defun ImportDWGFile (full_path)
+(defun ImportDWGFile (full_path / old_filedia)
+  (setq old_filedia (getvar "FILEDIA"))
+  (setvar "FILEDIA" 0)
   (command "_.-INSERT" full_path "0,0,0" "1" "1" "0")
   (while (> (getvar "CMDACTIVE") 0) (command pause))
+  (setvar "FILEDIA" old_filedia)
 )
 
 ;;=========================================================
@@ -126,9 +115,13 @@
   folder_path csv_file data_list
   i filename block_name full_path ext
   ss_solids ss_temp idx new_ent blk_ref dest_x
-  clean_name stt_val)
+  clean_name stt_val old_filedia)
 
   (prompt "\n=== IMPORT FILE VÀ TẠO BLOCK (TỰ ĐỘNG) ===\n")
+  
+  ;; Lưu và tắt FILEDIA để chạy tự động
+  (setq old_filedia (getvar "FILEDIA"))
+  (setvar "FILEDIA" 0)
   
   ;; 1. CHỌN THƯ MỤC
   (prompt "\n--- Bước 1: Chọn thư mục chứa các file ---\n")
@@ -137,14 +130,14 @@
                       (getfiled "CHỌN 1 FILE BẤT KỲ TRONG THƯ MỤC" "" "*" 8)))
   
   (if (not folder_path)
-    (progn (prompt "[!] Đã hủy.") (princ) (exit))
+    (progn (prompt "[!] Đã hủy.") (setvar "FILEDIA" old_filedia) (princ) (exit))
   )
   (prompt (strcat "=> Thư mục: " folder_path "\n"))
   
   ;; 2. CHỌN FILE CSV
   (prompt "\n--- Bước 2: Chọn file danh sách (CSV) ---\n")
   (setq csv_file (getfiled "Chọn file CSV" "" "csv" 8))
-  (if (not csv_file) (progn (prompt "[!] Đã hủy.") (princ) (exit)))
+  (if (not csv_file) (progn (prompt "[!] Đã hủy.") (setvar "FILEDIA" old_filedia) (princ) (exit)))
   (prompt (strcat "=> File CSV: " csv_file "\n"))
   
   ;; 3. ĐỌC DANH SÁCH TỪ CSV
@@ -154,6 +147,7 @@
   (if (= (length data_list) 0)
     (progn 
       (prompt "[!] File CSV rỗng hoặc lỗi định dạng.") 
+      (setvar "FILEDIA" old_filedia)
       (princ) 
       (exit)
     )
@@ -161,13 +155,10 @@
   
   (prompt (strcat "\n  [OK] Tìm thấy " (itoa (length data_list)) " mục trong CSV\n"))
   
-  ;; SẮP XẾP THEO STT (Cột 1) TĂNG DẦN
-  ;; STT=1 sẽ import đầu tiên, STT=2 import thứ hai...
-  (setq data_list (vl-sort data_list 
-                           '(lambda (a b) 
-                              (< (atoi (car a)) (atoi (car b))))))
+  ;; SẮP XẾP THEO STT TĂNG DẦN
+  (setq data_list (vl-sort data_list '(lambda (a b) (< (atoi (car a)) (atoi (car b))))))
   
-  ;; HIỂN THỊ DANH SÁCH ĐÃ SẮP XẾP
+  ;; HIỂN THỊ DANH SÁCH
   (prompt "\n  Danh sách sẽ import (theo thứ tự STT):\n")
   (setq i 0)
   (foreach item data_list
@@ -182,7 +173,7 @@
     )
   )
   
-  ;; 4. DUYỆT VÀ IMPORT THEO THỨ TỰ STT
+  ;; 4. DUYỆT VÀ IMPORT
   (prompt "\n--- Bước 4: Đang xử lý tự động... ---\n")
   (setq i 0)
   
@@ -244,9 +235,6 @@
             (setq blk_ref (entlast))
             
             ;; 4. Tính vị trí MOVE
-            ;; File đầu tiên (i=0): X=0
-            ;; File thứ 2 (i=1): X=1000
-            ;; File thứ 3 (i=2): X=1100
             (if (= i 0)
               (setq dest_x 0.0)
               (setq dest_x (+ 1000.0 (* (1- i) 100.0)))
@@ -276,6 +264,9 @@
       )
     )
   )
+  
+  ;; Khôi phục FILEDIA
+  (setvar "FILEDIA" old_filedia)
   
   (prompt "\n\n=== HOÀN THÀNH ===\n")
   (prompt (strcat "Đã xử lý " (itoa i) " file.\n"))
