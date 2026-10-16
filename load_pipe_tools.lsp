@@ -27,8 +27,7 @@
   (if (not baseDir) (setq baseDir ""))
 
   ;; 2. DANH SÁCH CÁC MODULE CẦN NẠP
-  ;; Chỉ nạp các file trong modules/common và modules/commands.
-  ;; Không thêm các hàm từ thư mục other/.
+  ;; Đã thêm DemBL.lsp và Length.lsp vào thư mục commands
   (setq fileList '(
     "modules\\common\\pipe_common.lsp"
     "modules\\commands\\pipe_export.lsp"
@@ -39,6 +38,8 @@
     "modules\\commands\\pipe_slope.lsp"
     "modules\\commands\\BOOM.lsp"
     "modules\\commands\\BOM2D.lsp"
+    "modules\\commands\\DemBL.lsp"   ;; <-- FILE MỚI 1
+    "modules\\commands\\Length.lsp"  ;; <-- FILE MỚI 2
     "modules\\commands\\BLOCK_ORIENT.lsp"
   ))
 
